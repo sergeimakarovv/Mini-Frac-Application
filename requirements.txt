@@ -1,0 +1,10 @@
+shiny==1.7.2
+mathjaxr==1.6-0
+openxlsx==4.2.5
+shinydashboard==0.7.2
+noteMD==0.1.0
+plotly==4.10.0.9001
+readr==2.1.2
+readxl==1.4.0
+DT==0.25
+rmarkdown==2.17

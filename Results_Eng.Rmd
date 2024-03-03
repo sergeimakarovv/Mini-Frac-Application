@@ -1,0 +1,159 @@
+---
+title: "Mini Frac Analysis Report"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Input Data
+```{r}
+                                    data <- df_input_en()
+                                    knitr::kable(data, col.names = NULL)
+                                    br()
+```
+
+### Mini-Frac test
+```{r fig.width = 9, fig.height = 5}
+df_inject = df_inject_en()
+  # df_inject <-read_excel("minifrac_test.xlsx")
+  colnames(df_inject)<-c('t','u', 'p', 'V', 'g')
+  
+  fig <- plot_ly()
+  # Add traces
+  fig <- fig %>% add_trace(x = ~df_inject$t, y = ~df_inject$u, name = "Bottomhole Injection rate, m3/min", mode = "lines+markers", type = "scatter", 
+                           line = list(color = 'rgb(60, 77, 233)'), marker = list(color = 'rgb(60, 77, 233)'))
+  
+  m <- list(
+    l = 70,
+    r = 70,
+    b = 50,
+    t = 10,
+    pad = 10
+  )
+  
+  ay <- list(color = "rgb(233, 16, 16)",
+             overlaying = "y",
+             side = "right",
+             title = list(text ="Bottomhole Pressure, atm", standoff = 20))
+  
+  fig <- fig %>% add_trace(df_inject, x = ~df_inject$t, y = ~df_inject$p, name = "Bottomhole Pressure, atmм", yaxis = "y2", mode = "lines+markers", type = "scatter",
+                           line = list(color = 'rgb(233, 16, 16)'), marker = list(color = 'rgb(233, 16, 16)'))
+  
+  # Set figure title, x and y-axes titles
+  fig <- fig %>% layout(
+    yaxis2 = ay,
+    xaxis = list(title="Time, min"),
+    yaxis = list(title="Bottomhole Injection rate, m3/min", color ='rgb(60, 77, 233)')
+  )%>%
+    layout(plot_bgcolor='#e5ecf6',
+           xaxis = list(
+             zerolinecolor = '#ffff',
+             zerolinewidth = 2,
+             gridcolor = 'ffff'),
+           yaxis = list(
+             zerolinecolor = '#ffff',
+             zerolinewidth = 2,
+             gridcolor = 'ffff'),
+           margin = m,
+           # legend = list(x = 0.01, y = 0.9),
+           showlegend = FALSE
+    )
+  
+  fig 
+```
+
+## Calculation theory
+
+The concept of pressure curve analysis is based on the observation that the degree of pressure drop during fracture closure contains useful information about the intensity of the leakoff process. 
+
+Fracture volume:
+$$V_{t_e}=V_i-2A_eS_p-2A_eg\left(\Delta t_D,\alpha\right)C_L\sqrt{t_e}$$
+where the dimensionless time interval $\Delta t_D=\Delta t/t_e$; $V_i$ - pumped volume for one fracture wing; 
+$g\left(\Delta t_D,\alpha\right)$ - Grasgof function (g-function)
+
+In the PKN model, the constant $\alpha$ is assumed to be $\frac{4}{5}$.
+
+Approximation of the g-function for a given value $\alpha$:
+$$g\left(d,\frac{4}{5}\right)=\frac{1,41495+79,4125d+632,457d^2+1293,07d^3+763,19d^4+94,0367d^5}{1+54,8534d^2+383,11d^3+540,342d^4+167,741d^5+6,49129d^6}$$
+where $d$ – dimensionless time
+
+The proportionality coefficient $S_f$, or fractute stiffness, for the PKN model:
+$$S_f=\frac{2E^\prime}{\pi h_f}$$
+Plane strain modulus: 
+$$E^\prime=\frac{E}{1 -\nu^2}$$
+The linear trend of the g-function: 
+$$p=b_N-m_N\times g\left(\Delta t_D,\alpha\right)$$
+where $b_N$ is the intersept coefficient of the straight line, atm; $m_N$ is the slope coefficient, atm.
+
+Apparent leakoff coefficient (for total area): 
+$$C_L=\frac{-m_N}{2\sqrt{t_e}S_f}$$
+Leakoff coefficient in permeable layer 
+$$C_{L, \; res}=C_L\cdot\frac{1}{r_p}$$
+$$r_p = \frac{h_p}{h_f}$$
+Fracture half length:
+$$x_f=\frac{2E^\prime V_i}{\pi h_f^2\left(b_N-p_c\right)}$$
+Average fracture width:
+$$\bar{w_e}=\frac{V_i}{x_fh_f}-2g_0\left(\alpha\right)C_L\sqrt{t_e}$$
+Fluid efficiency: 
+$$\eta_e=\frac{x_f\cdot\bar{w_e}\cdot h_f}{V_i}$$
+
+
+
+
+
+### Mini-frac analysis results
+```{r}
+                                    data <- df_result_en()
+                                    colnames(data)<-c('Parameter','Value')
+                                    knitr::kable(data)
+                                     br()
+```
+
+### g-function plot
+
+
+```{r fig.width = 8, fig.height = 5}
+    df = df_g_en()
+    # df_inject <-read_excel("minifrac_test.xlsx")
+    colnames(df)<-c('g','p', 'lin')
+    
+    fig <- plot_ly()
+    # Add traces
+    fig <- fig %>% add_trace(x = ~df$g, y = ~df$p, name = "Pressure, atm", mode = "markers", type = "scatter", 
+                             marker = list(color = '#3131E1', size = 9))
+
+
+    fig <- fig %>% add_trace(x = ~df$g, y = ~df$lin, name = "Linear trend", mode = "lines", type = "scatter",
+                             line = list(color = '#27AE60', size = 7))
+    # 
+    # Set figure title, x and y-axes titles
+    fig <- fig %>% layout(
+      xaxis = list(title="g-function"),
+      yaxis = list(title="Pressure, atm", range = c(0,800))
+    )%>%
+      layout(plot_bgcolor='#e5ecf6',
+             xaxis = list(
+               zerolinecolor = '#ffff',
+               zerolinewidth = 2,
+               gridcolor = 'ffff'),
+             yaxis = list(
+               zerolinecolor = '#ffff',
+               zerolinewidth = 2,
+               gridcolor = 'ffff'),
+             # legend = list(x = 0.01, y = 0.9),
+             showlegend = FALSE
+      )
+    fig  
+```
+
+### Report comment
+```{r Interval2, warning = FALSE}
+note_in_md_word(input$markdowninput_en)
+```

@@ -1,0 +1,153 @@
+---
+title: "Отчёт по мини-ГРП"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Входные данные 
+```{r}
+                                    data <- df_input()
+                                    knitr::kable(data, col.names = NULL)
+                                    br()
+```
+
+### Тест мини-ГРП 
+```{r fig.width = 9, fig.height = 5}
+    df_inject = df_inject()
+    # df_inject <-read_excel("minifrac_test.xlsx")
+    colnames(df_inject)<-c('t','u', 'p', 'V', 'g')
+
+    fig <- plot_ly()
+    # Add traces
+    fig <- fig %>% add_trace(x = ~df_inject$t, y = ~df_inject$u, name = "Скорость закачки на забое, м3/мин", mode = "lines+markers", type = "scatter", 
+                             line = list(color = 'rgb(60, 77, 233)'), marker = list(color = 'rgb(60, 77, 233)'))
+    
+    m <- list(
+      l = 70,
+      r = 70,
+      b = 50,
+      t = 10,
+      pad = 10
+    )
+
+    ay <- list(color = "rgb(233, 16, 16)",
+               overlaying = "y",
+               side = "right",
+               title = list(text ="Забойное давление, атм", standoff = 20))
+    
+    fig <- fig %>% add_trace(df_inject, x = ~df_inject$t, y = ~df_inject$p, name = "Забойное давление, атм", yaxis = "y2", mode = "lines+markers", type = "scatter",
+                             line = list(color = 'rgb(233, 16, 16)'), marker = list(color = 'rgb(233, 16, 16)'))
+    
+    # Set figure title, x and y-axes titles
+    fig <- fig %>% layout(
+      yaxis2 = ay,
+      xaxis = list(title="Время, мин"),
+      yaxis = list(title="Скорость закачки на забое, м3/мин", color ='rgb(60, 77, 233)')
+    )%>%
+      layout(plot_bgcolor='#e5ecf6',
+             xaxis = list(
+               zerolinecolor = '#ffff',
+               zerolinewidth = 2,
+               gridcolor = 'ffff'),
+             yaxis = list(
+               zerolinecolor = '#ffff',
+               zerolinewidth = 2,
+               gridcolor = 'ffff'),
+             margin = m,
+             # legend = list(x = 0.01, y = 0.9),
+             showlegend = FALSE
+      )
+    
+   fig 
+```
+
+
+## Теория к расчету 
+
+Концепция по анализу кривых давления основана на наблюдении, что степень падения давления во время процесса смыкания трещины содержит полезную информацию об интенсивности процесса утечек. 
+
+Объем трещины гидроразрыва: 
+$$V_{t_e}=V_i-2A_eS_p-2A_eg\left(\Delta t_D,\alpha\right)C_L\sqrt{t_e}$$
+где безразмерный промежуток времени $\Delta t_D=\Delta t/t_e$; $V_i$ - закачанный объем для одного крыла трещины
+$g\left(\Delta t_D,\alpha\right)$ - функция Грасгофа (g-функция)
+
+В модели PKN постоянная $\alpha$ принимается равной $\frac{4}{5}$.
+
+Аппроксимация g-функции для данного значения $\alpha$:
+$$g\left(d,\frac{4}{5}\right)=\frac{1,41495+79,4125d+632,457d^2+1293,07d^3+763,19d^4+94,0367d^5}{1+54,8534d^2+383,11d^3+540,342d^4+167,741d^5+6,49129d^6}$$
+где $d$ – безразмерное время
+
+Коэффициент пропорциональности $S_f$, или жесткость трещины, для модели PKN: 
+$$S_f=\frac{2E^\prime}{\pi h_f}$$
+Модуль плоской деформации: 
+$$E^\prime=\frac{E}{1 -\nu^2}$$
+Линейный тренд g-функции: 
+$$p=b_N-m_N\times g\left(\Delta t_D,\alpha\right)$$
+где $b_N$ – коэффициент смещения прямой, атм; $m_N$ – коэффициент наклона, атм.
+
+Кажущийся коэффициент утечек: 
+$$C_L=\frac{-m_N}{2\sqrt{t_e}S_f}$$
+Коэффициент утечек в проницаемом слое: 
+$$C_{L, \; res}=C_L\cdot\frac{1}{r_p}$$
+$$r_p = \frac{h_p}{h_f}$$
+Полудлина трещины: 
+$$x_f=\frac{2E^\prime V_i}{\pi h_f^2\left(b_N-p_c\right)}$$
+Ширина трещины: 
+$$\bar{w_e}=\frac{V_i}{x_fh_f}-2g_0\left(\alpha\right)C_L\sqrt{t_e}$$
+Эффективность жидкости разрыва: 
+$$\eta_e=\frac{x_f\cdot\bar{w_e}\cdot h_f}{V_i}$$
+
+
+## Результаты анализа мини-ГРП
+
+```{r}
+                                    data <- df_result()
+                                    colnames(data)<-c('Параметр','Значение')
+                                    knitr::kable(data)
+                                     br()
+```
+
+### График g-функции
+
+```{r fig.width = 8, fig.height = 5}
+    df = df_g()
+    # df_inject <-read_excel("minifrac_test.xlsx")
+    colnames(df)<-c('g','p', 'lin')
+    
+    fig <- plot_ly()
+    # Add traces
+    fig <- fig %>% add_trace(x = ~df$g, y = ~df$p, name = "Давление, атм", mode = "markers", type = "scatter", 
+                             marker = list(color = '#3131E1', size = 9))
+
+
+    fig <- fig %>% add_trace(x = ~df$g, y = ~df$lin, name = "Линейный тренд", mode = "lines", type = "scatter",
+                             line = list(color = '#27AE60', size = 7))
+    # 
+    # Set figure title, x and y-axes titles
+    fig <- fig %>% layout(
+      xaxis = list(title="g-функция"),
+      yaxis = list(title="Давление, атм", range = c(0, 800))
+    )%>%
+      layout(plot_bgcolor='#e5ecf6',
+             xaxis = list(
+               zerolinecolor = '#ffff',
+               zerolinewidth = 2,
+               gridcolor = 'ffff'),
+             yaxis = list(
+               zerolinecolor = '#ffff',
+               zerolinewidth = 2,
+               gridcolor = 'ffff'),
+             # legend = list(x = 0.01, y = 0.9),
+             showlegend = FALSE
+      )
+    fig  
+```
+
